@@ -73,7 +73,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         let plaintext: String = client.decrypt(cipher.as_str()).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
-
+        
         assert_eq!(plaintext_orig.as_str(),
                    plaintext.as_str());
 	}
