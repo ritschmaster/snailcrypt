@@ -1,4 +1,11 @@
-use crate::client::Client;
+use crate::{    
+	client::{
+		Client,
+		ClientVersion
+	},
+	config::Config,
+	util::Analyzer,
+};
 
 use std::io::Read;
 
@@ -22,14 +29,18 @@ use openssl::{
 const PLAINTEXT_CHUNK_SIZE: i32 = 126;
 
 #[allow(unused)]
-pub struct DefaultClient {
-    api_url: String,
+pub struct V1Client {
+    analyzer: Box<dyn Analyzer>,
+    config: Box<dyn Config>,    
 }
 
-impl DefaultClient {
+impl V1Client {
     #[allow(unused)]
-    pub fn new(api_url: &str) -> DefaultClient {
-        return DefaultClient { api_url: String::from(api_url) };
+    pub fn new(analyzer: Box<dyn Analyzer>, config: Box<dyn Config>) -> V1Client {
+        return V1Client { 
+            analyzer: analyzer,
+            config: config 
+        };
     }
 
     fn send_lockdate_request(&self, lockdate: DateTime<FixedOffset>) -> Result<Value, &'static str> {
@@ -49,7 +60,7 @@ impl DefaultClient {
         /***********************************************************************
          * Retrieve the URL
          */
-        let api_url = self.get_api_url();
+        let api_url = self.get_config().get_api_url();
         let api_url_keys = api_url.to_string() + "/keys";
 
         /***********************************************************************
@@ -166,7 +177,9 @@ impl DefaultClient {
     }
 
     fn to_snailcrypt_cipher(&self, ciphertext: &str, lockdate: &str) -> String {
-        let mut snailcrypt_cipher: String = String::from(lockdate);
+        let mut snailcrypt_cipher: String = self.get_client_version().to_string();
+        snailcrypt_cipher.push(':');
+        snailcrypt_cipher.push_str(lockdate);
         snailcrypt_cipher.push(':');
         snailcrypt_cipher.push_str(ciphertext);
 
@@ -176,12 +189,12 @@ impl DefaultClient {
     fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, &'static str> {
         let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
 
-        if cipher_comp_vec.len() != 2 {
+        if cipher_comp_vec.len() != 3 {
             // Err("Cipher is invalid. It must consist of two components separted by a colon.")
             panic!("Cipher is invalid. It must consist of two components separted by a colon.");
         }
 
-        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str(String::from_utf8(base64::decode(cipher_comp_vec[0])
+        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str(String::from_utf8(base64::decode(cipher_comp_vec[1])
                                                                                     .unwrap_or_else(|error| {
                                                                                         panic!("Error: {:?}", error);
                                                                                     }))
@@ -200,18 +213,26 @@ impl DefaultClient {
     fn cipher_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<String, &'static str> {
         let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
 
-        if cipher_comp_vec.len() != 2 {
+        if cipher_comp_vec.len() != 3 {
             // Err("Cipher is invalid. It must consist of two components separted by a colon.")
             panic!("Cipher is invalid. It must consist of two components separted by a colon.");
         }
 
-        let cipher: String = String::from(cipher_comp_vec[1]);
+        let cipher: String = String::from(cipher_comp_vec[2]);
 
         Ok(cipher)
     }
+    
+    pub fn get_analyzer(&self) -> &Box<dyn Analyzer> {
+        return &self.analyzer;
+    }
+    
+    pub fn get_config(&self) -> &Box<dyn Config> {
+		return &self.config;
+	}
 }
 
-impl Client for DefaultClient {
+impl Client for V1Client {
     fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, &'static str> {
         /***********************************************************************
          * Get the public key for the requested lockdate
@@ -367,12 +388,12 @@ impl Client for DefaultClient {
            }))
     }
 
-    fn get_api_url(&self) -> &str {
-        return self.api_url.as_str();
-    }
-
-
     fn get_datetime_format(&self) -> &str {
         return "%Y-%m-%dT%H:%M:%S%z";
     }
+    
+    fn get_client_version(&self) -> ClientVersion {
+		return ClientVersion::V1;
+	}
 }
+
