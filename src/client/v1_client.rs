@@ -43,7 +43,7 @@ impl V1Client {
         };
     }
 
-    fn send_lockdate_request(&self, lockdate: DateTime<FixedOffset>) -> Result<Value, &'static str> {
+    fn send_lockdate_request(&self, lockdate: DateTime<FixedOffset>) -> Result<Value, String> {
         /***********************************************************************
          * Setup HTTP post input data
          */
@@ -80,7 +80,7 @@ impl V1Client {
             });
 
             /*******************************************************************
-            + Set function to send data
+             * Set function to send data
              */
             let mut transfer = handle.transfer();
             transfer.read_function(|buffer| {
@@ -90,7 +90,7 @@ impl V1Client {
             });
 
             /*******************************************************************
-            + Set function to receive data
+             * Set function to receive data
              */
             transfer.write_function(|buffer| {
                 output_vector.extend_from_slice(buffer);
@@ -114,40 +114,56 @@ impl V1Client {
         let output_object: Value = serde_json::from_slice(&output_vector).unwrap_or_else(|error| {
             panic!("Error {:?}", error);
         });
-
+                
         Ok(output_object)
     }
 
-    fn get_public_key(&self, lockdate: DateTime<FixedOffset>) -> Result<Rsa<Public>, &'static str> {
+    fn get_public_key(&self, lockdate: DateTime<FixedOffset>) -> Result<Rsa<Public>, String> {
         /***********************************************************************
          * Extract public key attribute
          */
         let output_object: Value = self.send_lockdate_request(lockdate)
                                        .unwrap_or_else(|error| {
                                            panic!("Error {:?}", error);
-                                       });
-
+                                       });                                      
+        
+        /***********************************************************************
+         * Error: request ended with an error
+         */
+        if output_object["code"].is_number() {
+			return Err(String
+				::from(output_object["message"]
+					.as_str()
+					.unwrap_or_else(|| {
+						panic!("Error: unable to extract message from response")
+					})));
+		}
+    
         /***********************************************************************
          * Extract public key attribute
          */
-        let public_key_str: String = String::from(output_object["public_key"]
-                                                  .as_str()
-                                                  .unwrap_or_else(|| {
-                                                      panic!("Error ");
-                                                  }))
-                                    .replace("'", "");
+        let public_key_str: String = 
+        	String::from(output_object["public_key"]
+					.as_str()
+					.unwrap_or_else(|| {
+						panic!("Error: unable to extract public key from response")
+					}))
+				.replace("'", "");
 
         /***********************************************************************
          * Create public key object using the extracted public key
          */
-        let public_key: Rsa<Public> = Rsa::public_key_from_pem(public_key_str.as_bytes()).unwrap_or_else(|error| {
+        let public_key: Rsa<Public> = 
+        	Rsa::public_key_from_pem(public_key_str
+				.as_bytes())
+				.unwrap_or_else(|error| {
             panic!("Error {:?}", error);
         });
 
         Ok(public_key)
     }
 
-    fn get_private_key(&self, lockdate: DateTime<FixedOffset>) -> Result<Rsa<Private>, &'static str> {
+    fn get_private_key(&self, lockdate: DateTime<FixedOffset>) -> Result<Rsa<Private>, String> {
         /***********************************************************************
          * Extract public key attribute
          */
@@ -155,21 +171,44 @@ impl V1Client {
                                        .unwrap_or_else(|error| {
                                            panic!("Error {:?}", error);
                                        });
+                                       
+        /***********************************************************************
+         * Error: request ended with an error
+         */
+        if output_object["code"].is_string() {			
+			return Err(String
+				::from(output_object["message"]
+					.as_str()
+					.unwrap_or_else(|| {
+						panic!("Error: unable to extract message from response")
+					})));
+		}
 
         /***********************************************************************
-         * Extract public key attribute
+         * Extract private key attribute
          */
-        let private_key_str: String = String::from(output_object["private_key"]
-                                                  .as_str()
-                                                  .unwrap_or_else(|| {
-                                                      panic!("Error ");
-                                                  }))
-                                    .replace("'", "");
+		let private_key_string_result: &Value = 
+        	&output_object["private_key"];
+					
+		if !private_key_string_result.is_string() {
+			return Err(String
+				::from("Error: private key has not been yet released"));
+		}
+		
+        let private_key_string: String = 
+        	private_key_string_result
+        		.as_str()
+        		.unwrap()
+		        .replace("'", "");
 
         /***********************************************************************
          * Create private key object using the extracted private key
          */
-        let private_key: Rsa<Private> = Rsa::private_key_from_pem(private_key_str.as_bytes()).unwrap_or_else(|error| {
+        let private_key: Rsa<Private> = 
+        	Rsa::private_key_from_pem(private_key_string
+        								.as_str()
+        								.as_bytes())
+        	.unwrap_or_else(|error| {
             panic!("Error {:?}", error);
         });
 
@@ -186,30 +225,7 @@ impl V1Client {
         return snailcrypt_cipher;
     }
 
-    fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, &'static str> {
-        let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
-
-        if cipher_comp_vec.len() != 3 {
-            // Err("Cipher is invalid. It must consist of two components separted by a colon.")
-            panic!("Cipher is invalid. It must consist of two components separted by a colon.");
-        }
-
-        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str(String::from_utf8(base64::decode(cipher_comp_vec[1])
-                                                                                    .unwrap_or_else(|error| {
-                                                                                        panic!("Error: {:?}", error);
-                                                                                    }))
-                                                                       .unwrap_or_else(|error| {
-                                                                           panic!("Error: {:?}", error);
-                                                                       })
-                                                                       .as_str(),
-                                                                       self.get_datetime_format())
-            .unwrap_or_else(|error| {
-            panic!("Error: {:?}", error);
-        });
-
-        Ok(lockdate)
-    }
-
+    
     fn cipher_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<String, &'static str> {
         let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
 
@@ -233,12 +249,18 @@ impl V1Client {
 }
 
 impl Client for V1Client {
-    fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, &'static str> {
+    fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, String> {
         /***********************************************************************
          * Get the public key for the requested lockdate
          */
-        let public_key: Rsa<Public> = self.get_public_key(lockdate).unwrap_or_else(|error| {
-            panic!("Error {:?}", error);
+		let public_key_result = self.get_public_key(lockdate);
+		
+		if public_key_result.is_err() {
+			return Err(public_key_result.unwrap_err());
+		}
+		
+        let public_key: Rsa<Public> = public_key_result.unwrap_or_else(|error| {			
+            panic!("Error: {:?}", error);
         });
 
         /***********************************************************************
@@ -290,7 +312,7 @@ impl Client for V1Client {
         Ok(self.to_snailcrypt_cipher(cipher_string.as_str(), lockdate_string.as_str()))
     }
 
-    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str> {
+    fn decrypt(&self, ciphertext: &str) -> Result<String, String> {
         /***********************************************************************
          * Extract the lockdate from the ciphertext
          */
@@ -302,8 +324,13 @@ impl Client for V1Client {
         /***********************************************************************
          * Get the private key for the lockdate
          */
-        let private_key: Rsa<Private> = self
-            .get_private_key(lockdate)
+		let private_key_result = self.get_private_key(lockdate);
+		
+		if private_key_result.is_err() {
+			return Err(private_key_result.unwrap_err());
+		}		
+
+        let private_key: Rsa<Private> = private_key_result
             .unwrap_or_else(|error| {
                 panic!("Error {:?}", error);
             });
@@ -386,6 +413,33 @@ impl Client for V1Client {
            .unwrap_or_else(|error| {
                panic!("Error {:?}", error);
            }))
+    }
+    
+    fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, String> {
+        let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
+
+        if cipher_comp_vec.len() != 3 {
+            // Err("Cipher is invalid. It must consist of two components separted by a colon.")
+            panic!("Cipher is invalid. It must consist of two components separted by a colon.");
+        }
+
+        let lockdate: DateTime<FixedOffset> = 
+        	DateTime::parse_from_str(
+				String::from_utf8(
+					base64::decode(cipher_comp_vec[1])
+                 	.unwrap_or_else(|error| {
+                    	panic!("Error: {:?}", error);
+                    }))
+				.unwrap_or_else(|error| {
+   					panic!("Error: {:?}", error);
+				})
+				.as_str(),
+				self.get_datetime_format())
+			.unwrap_or_else(|error| {
+            	panic!("Error: {:?}", error);
+			});
+
+        Ok(lockdate)
     }
 
     fn get_datetime_format(&self) -> &str {

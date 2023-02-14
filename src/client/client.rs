@@ -19,9 +19,11 @@ impl fmt::Display for ClientVersion {
 }
 
 pub trait Client {
-    fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, &'static str>;
+    fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, String>;
 
-    fn decrypt(&self, ciphertext: &str) -> Result<String, &'static str>;
+    fn decrypt(&self, ciphertext: &str) -> Result<String, String>;
+    
+    fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, String>;
         
     fn get_datetime_format(&self) -> &str;
     
