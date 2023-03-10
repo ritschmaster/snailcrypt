@@ -33,6 +33,7 @@ impl Analyzer for DefaultAnalyzer {
     fn str_to_version(&self, client_version: &str) -> Result<ClientVersion, String> {
 		match client_version {
 			"1" => Ok(ClientVersion::V1),
+			"2" => Ok(ClientVersion::V2),			
 			_   => Err(format!("Unknown client version: {}", client_version)),
 		}
 	}

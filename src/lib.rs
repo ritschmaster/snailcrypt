@@ -20,7 +20,7 @@ mod tests {
     use url::form_urlencoded;
     
     #[test]
-    fn version_parse_ok() {
+    fn version_v1_parse_ok() {
 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
 		let analyzer = analyzer_factory.create();
 	
@@ -42,7 +42,7 @@ mod tests {
 	}
 	
 	    #[test]
-    fn version_parse_nok() {
+    fn version_v1_parse_nok() {
 		let mut error_thrown: bool;
 	
 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
@@ -75,7 +75,7 @@ mod tests {
 	}
 
     #[test]
-    fn encrypt_small_str() {
+    fn encrypt_v1_small_str() {
         let plaintext_orig: String = String::from("hello world");
 
  		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new(); 		
@@ -89,7 +89,11 @@ mod tests {
             panic!("Error: {:?}", error);
         });
 
-        let cipher: String = client.encrypt(plaintext_orig.as_str(), lockdate).unwrap_or_else(|error| {
+        let cipher: String = client.encrypt(&client::ClientEncryptArg {
+        	plaintext: plaintext_orig.clone(),
+        	lockdate,
+        	hint: String::from(""),
+        }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
 
@@ -103,7 +107,7 @@ mod tests {
 	}
 	
 	#[test]
-	fn encrypt_large_str() {
+	fn encrypt_v1_large_str() {
 		let plaintext_orig: String = 
 			String::from("Nullam eu ante vel est convallis dignissim.  Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, 
 quis tempor ligula erat quis odio.  Nunc porta vulputate tellus.  
@@ -127,7 +131,11 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             panic!("Error: {:?}", error);
         });
 
-        let cipher: String = client.encrypt(plaintext_orig.as_str(), lockdate).unwrap_or_else(|error| {
+        let cipher: String = client.encrypt(&client::ClientEncryptArg{
+        	plaintext: plaintext_orig.clone(),
+        	lockdate,
+        	hint: String::from(""),
+		}).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
 
@@ -141,7 +149,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
 	}
 
 	#[test]
-	fn encrypt_url() {
+	fn encrypt_v1_url() {
         let plaintext_orig: String = String::from("hello world");
 
 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();        
@@ -155,7 +163,11 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             panic!("Error: {:?}", error);
         });
 
-        let cipher: String = client.encrypt(plaintext_orig.as_str(), lockdate).unwrap_or_else(|error| {
+        let cipher: String = client.encrypt(&client::ClientEncryptArg{
+        	plaintext: plaintext_orig,
+        	lockdate,
+        	hint: String::from(""),
+		}).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
 		
@@ -172,4 +184,94 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
 //        assert_eq!("LPX/bp1RFJR7BOpJVWa8ewFQPjF1k5bxU+OtiOg/3CgsVpcyF6m32nLIkhptrB0QcS+XiV/EpgBXLDOFL8n/6n/srdidy1f8s+oGn05U7zUkVTNPeSTV5RlAL+MvJ3dp+rhfoSIlkauY5Iioo+u/Vf/kab3K5hlRhawpG2aw4990TfDQmyvNZVYfy+2yuxk1M+bkZOK7PNZ0ntQPPvHkY4XIZbjzQkEIDm8fIKnqf2Nji1GU2bkB0YUykKE4/9D20Ul7RLnvhzyPckrePygyVCMMwOUH41yzVAAmKpkE0vmd8sbM7kVHGxer9PRFrXjTUoKYzz4YcYspbcwjhXUuS92hMqXr6w8zIt80zK5AvLrAKcjlyCwU7juWE0WBuawkfddi0LAqvcOYhF0cPQY/KhZa/jwDU2+QS3R1fCOlT2aYumsOL3m6oat5oKPctPB5EULXgx5C9Jsn6OYMz0Wmxj+RSvgOthCVOmfcG0luaU98l582k8XjXc8m08HyqmsPpY19gxrL/CJS9w7syKSk8SJLIXChhken1cLzjCw8YMYXtaJw4ChBypiso+yQpOZFgOSHpT6Iuo38N93wK0C0mzL7EXC5w+kg3n/J95tqPu+V7EI1ArgiIDC2Cg1mKaHSkbhFbaUJrooZOy2T+q4ouFuJQXu+oWovo6wULz3iIIo=",
 //                   cipher_url.as_str());
     }
+
+	#[test]    
+    fn version_v2_parse_ok() {
+		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+		let analyzer = analyzer_factory.create();
+	
+		/* Arbitary text */	
+		assert!(analyzer.get_version("2:asdf:asdf:asdf")
+						   .unwrap_or_else(|error| { 
+								panic!("Error: {:?}", error); 
+							})
+				==
+				client::ClientVersion::V2);
+				
+		/* Actual cipher text */	
+		assert!(analyzer.get_version("2:MjAyMi0xMS0xOVQxNzowMDowMCswMTAw:jbTjg8y9U5g95BP/LKQHbE2pSBDYFnILpgFbqFfqXbdMYUGUh3v1R040d+eHZuYzOe55qKf8Q16J8zvawKmMejhlVGTOhLHobnJvtL08S184v9/HxGL1A1ZrtgoAiuxd7DZLLxAOQSzJoBlRG2jz9AhcCQI5pXn1EujvMICv2dusnmrjuzxPRnu2NtaXJNpzEycGSwTxoXuxWOb93YXaJlVOcS7mMjSQG5tLBA84AYFoeqJcERITSzsRcckMU0uOEWLm66OtiLrDRgmRo/0xSUIn+kocjI7RExl1FgeeqppDuR1C9CgCrIicSbvsiqn6zlrf1wyz+lMw0sUGOCU3xQ==:asdf")
+						   .unwrap_or_else(|error| { 
+								panic!("Error: {:?}", error); 
+							})
+				==
+				client::ClientVersion::V2);		
+	}
+	
+    #[test]
+    fn version_v2_parse_nok() {
+		let mut error_thrown: bool;
+	
+		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+		let analyzer = analyzer_factory.create();
+	
+		/* Arbitary text */	
+		error_thrown = false;
+		analyzer.get_version(":asdf:asdf:asdf")
+			    .unwrap_or_else(|error| {					
+					assert_eq!(error.to_string().as_str(),
+							   "Unknown client version: ");
+							 
+					error_thrown = true;								
+					return client::ClientVersion::V2;
+				});
+		assert_eq!(error_thrown, true);
+				
+		/* Actual cipher text */			
+		error_thrown = false;
+		analyzer.get_version("MjAyMi0xMS0xOVQxNzowMDowMCswMTAw:jbTjg8y9U5g95BP/LKQHbE2pSBDYFnILpgFbqFfqXbdMYUGUh3v1R040d+eHZuYzOe55qKf8Q16J8zvawKmMejhlVGTOhLHobnJvtL08S184v9/HxGL1A1ZrtgoAiuxd7DZLLxAOQSzJoBlRG2jz9AhcCQI5pXn1EujvMICv2dusnmrjuzxPRnu2NtaXJNpzEycGSwTxoXuxWOb93YXaJlVOcS7mMjSQG5tLBA84AYFoeqJcERITSzsRcckMU0uOEWLm66OtiLrDRgmRo/0xSUIn+kocjI7RExl1FgeeqppDuR1C9CgCrIicSbvsiqn6zlrf1wyz+lMw0sUGOCU3xQ==:asdf")				
+				.unwrap_or_else(|error| { 
+					assert_eq!(error.to_string().as_str(),
+							   "Unknown client version: MjAyMi0xMS0xOVQxNzowMDowMCswMTAw");
+							 
+					error_thrown = true;
+					
+					return client::ClientVersion::V2;
+				});		
+		assert_eq!(error_thrown, true);
+	}
+
+    
+    #[test]
+    fn encrypt_v2_small_str() {
+        let plaintext_orig: String = String::from("hello world");
+
+ 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new(); 		
+		let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();   
+		let client_factory: factory::ClientFactory = factory::ClientFactory::new(analyzer_factory, config_factory);
+        let client: Box<dyn client::Client> = client_factory.create(client::ClientVersion::V2);
+
+        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
+                                                                       client.get_datetime_format())
+            .unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+        let cipher: String = client.encrypt(&client::ClientEncryptArg {
+        	plaintext: plaintext_orig.clone(),
+        	lockdate,
+        	hint: String::from("This is a test message"),
+        }).unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+
+        let plaintext: String = client
+        	.decrypt(cipher.as_str())
+        	.unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+        assert_eq!(plaintext_orig.as_str(),
+                   plaintext.as_str());
+	}
 }

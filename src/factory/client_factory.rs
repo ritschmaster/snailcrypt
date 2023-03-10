@@ -3,6 +3,7 @@ pub use crate::{
 		ClientVersion,
 		Client, 
 		V1Client,
+		V2Client,
 	},
 	config::Config,
 	factory::{
@@ -28,8 +29,15 @@ impl ClientFactory {
 
     pub fn create(&self, client_version: ClientVersion) -> Box<dyn Client> {        	
 		match client_version {
-			ClientVersion::V1 => return Box::new(V1Client::new(self.get_analyzer_factory().create(),
-        					 	           			           self.get_config_factory().create())),
+			ClientVersion::V1 
+			=> 
+			return Box::new(V1Client::new(self.get_analyzer_factory().create(),
+        	   			           self.get_config_factory().create())),
+        	ClientVersion::V2
+        	=> 
+        	return Box::new(V2Client::new(self.get_analyzer_factory().create(),
+        								  self.get_config_factory().create()),
+        					)
         }
     }
     

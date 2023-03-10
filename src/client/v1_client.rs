@@ -1,7 +1,8 @@
 use crate::{    
 	client::{
 		Client,
-		ClientVersion
+		ClientVersion,
+		ClientEncryptArg,
 	},
 	config::Config,
 	util::Analyzer,
@@ -249,11 +250,18 @@ impl V1Client {
 }
 
 impl Client for V1Client {
-    fn encrypt(&self, plaintext: &str, lockdate: DateTime<FixedOffset>) -> Result<String, String> {
+    fn encrypt(&self, args: &ClientEncryptArg) -> Result<String, String> {
+    	/***********************************************************************
+         * Hinting is not supported
+         */
+        if args.hint.len() > 0 {
+        	return Err(String::from("Client version 1 does not support a plaintext hint."));
+        }
+    
         /***********************************************************************
          * Get the public key for the requested lockdate
          */
-		let public_key_result = self.get_public_key(lockdate);
+		let public_key_result = self.get_public_key(args.lockdate);
 		
 		if public_key_result.is_err() {
 			return Err(public_key_result.unwrap_err());
@@ -269,19 +277,19 @@ impl Client for V1Client {
         let ciphertext_chunk_size: i32 = public_key.size() as i32;
 
         let mut cipher_vector: Vec<u8> = Vec::new();
-        let cipher_vector_len: usize = (((plaintext.len() as f64 / PLAINTEXT_CHUNK_SIZE as f64).ceil() as i32) * ciphertext_chunk_size) as usize;
+        let cipher_vector_len: usize = (((args.plaintext.len() as f64 / PLAINTEXT_CHUNK_SIZE as f64).ceil() as i32) * ciphertext_chunk_size) as usize;
         cipher_vector.resize(cipher_vector_len, 0);
 
         let mut i: i32 = 0;
-        while i * PLAINTEXT_CHUNK_SIZE < plaintext.len() as i32 {
+        while i * PLAINTEXT_CHUNK_SIZE < args.plaintext.len() as i32 {
             let plaintext_cur_start: usize = (i * PLAINTEXT_CHUNK_SIZE) as usize;
             let mut plaintext_cur_end: usize = plaintext_cur_start + PLAINTEXT_CHUNK_SIZE as usize;
-            if plaintext_cur_end > plaintext.len() {
-                plaintext_cur_end = plaintext.len();
+            if plaintext_cur_end > args.plaintext.len() {
+                plaintext_cur_end = args.plaintext.len();
             }
 
             let plaintext_slice = &
-                (plaintext.as_bytes())[plaintext_cur_start .. plaintext_cur_end];
+                (args.plaintext.as_bytes())[plaintext_cur_start .. plaintext_cur_end];
 
             let cipher_cur_start: usize = (i * ciphertext_chunk_size) as usize;
             let cipher_cur_end: usize = cipher_cur_start + ciphertext_chunk_size as usize;
@@ -307,7 +315,7 @@ impl Client for V1Client {
         /***********************************************************************
          * Encode the lockdate
          */
-        let lockdate_string: String = base64::encode(lockdate.format(self.get_datetime_format()).to_string());
+        let lockdate_string: String = base64::encode(args.lockdate.format(self.get_datetime_format()).to_string());
 
         Ok(self.to_snailcrypt_cipher(cipher_string.as_str(), lockdate_string.as_str()))
     }
@@ -420,7 +428,7 @@ impl Client for V1Client {
 
         if cipher_comp_vec.len() != 3 {
             // Err("Cipher is invalid. It must consist of two components separted by a colon.")
-            panic!("Cipher is invalid. It must consist of two components separted by a colon.");
+            panic!("Cipher is invalid. It must consist of 3 components separted by a colon.");
         }
 
         let lockdate: DateTime<FixedOffset> = 
