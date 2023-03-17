@@ -3,6 +3,8 @@ use crate::{
 		Client,
 		ClientVersion,
 		ClientEncryptArg,
+		ClientDecryptResultSuccess,
+		ClientDecryptResultFailure,
 	},
 	config::Config,
 	util::Analyzer,
@@ -320,7 +322,8 @@ impl Client for V1Client {
         Ok(self.to_snailcrypt_cipher(cipher_string.as_str(), lockdate_string.as_str()))
     }
 
-    fn decrypt(&self, ciphertext: &str) -> Result<String, String> {
+    fn decrypt(&self, ciphertext: &str) 
+    	-> Result<ClientDecryptResultSuccess, ClientDecryptResultFailure> {
         /***********************************************************************
          * Extract the lockdate from the ciphertext
          */
@@ -335,7 +338,10 @@ impl Client for V1Client {
 		let private_key_result = self.get_private_key(lockdate);
 		
 		if private_key_result.is_err() {
-			return Err(private_key_result.unwrap_err());
+			return Err(ClientDecryptResultFailure { 
+				error_message: private_key_result.unwrap_err(), 
+				hint: String::from(""),
+			});
 		}		
 
         let private_key: Rsa<Private> = private_key_result
@@ -391,21 +397,6 @@ impl Client for V1Client {
              i += 1;
              plaintext_cur_actual_end += PLAINTEXT_CHUNK_SIZE as usize;
          }
-//        private_key
-//            .private_decrypt(base64::decode(self
-//                                            .cipher_from_snailcrypt_cipher(ciphertext)
-//                                            .unwrap_or_else(|error| {
-//                                                panic!("Error {:?}", error);
-//                                            }))
-//                             .unwrap_or_else(|error| {
-//                                 panic!("Error {:?}", error);
-//                             })
-//                             .as_slice(),
-//                             plaintext_vector.as_mut_slice(),
-//                             Padding::PKCS1_OAEP)
-//            .unwrap_or_else(|error| {
-//                panic!("Error {:?}", error);
-//            });
 
         let mut end_pos: usize = plaintext_vector.len();
         for (pos, elem) in plaintext_vector.iter().enumerate() {
@@ -417,10 +408,15 @@ impl Client for V1Client {
 
         plaintext_vector.resize(end_pos, 0);
 
-        Ok(String::from_utf8(plaintext_vector)
+        let plaintext = String::from_utf8(plaintext_vector)
            .unwrap_or_else(|error| {
                panic!("Error {:?}", error);
-           }))
+           });
+           
+		Ok(ClientDecryptResultSuccess { 
+			plaintext, 
+			hint: String::from("") 
+		})
     }
     
     fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, String> {

@@ -3,6 +3,8 @@ use crate::{
 		Client,
 		ClientVersion,
 		ClientEncryptArg,
+		ClientDecryptResultSuccess,
+		ClientDecryptResultFailure,		
 		V1Client,
 	},
 	config::Config,
@@ -55,23 +57,55 @@ impl Client for V2Client {
     	final_ciphertext.push_str(":");
     	final_ciphertext.push_str(corrected_ciphertext.as_str());
     	final_ciphertext.push_str(":");
-    	final_ciphertext.push_str(args.hint.as_str());
+    	final_ciphertext.push_str(base64::encode(args.hint.as_str()).as_str());
     	
 		Ok(final_ciphertext)
     }
 
-    fn decrypt(&self, ciphertext: &str) -> Result<String, String> {
+    fn decrypt(&self, ciphertext: &str) 
+    	-> Result<ClientDecryptResultSuccess, ClientDecryptResultFailure> {
     	let mut cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
 
         if cipher_comp_vec.len() != 4 {
-            // Err("Cipher is invalid. It must consist of two components separted by a colon.")
-            panic!("Cipher is invalid. It must consist of 4 components separted by a colon.");
+            return Err(ClientDecryptResultFailure { 
+        		error_message: String::from("Cipher is invalid. It must consist of 4 components separted by a colon."),
+        		hint: String::from(""),
+        	});
         }
+        
+        let hint_base64_result = base64::decode(cipher_comp_vec[3]);
+        if hint_base64_result.is_err() {
+        	return Err(ClientDecryptResultFailure { 
+        		error_message: hint_base64_result.unwrap_err().to_string(), 
+        		hint: String::from(""),
+        	});
+        }        
+        
+        let hint_result = String::from_utf8(hint_base64_result.unwrap());
+        if hint_result.is_err() {
+        	return Err(ClientDecryptResultFailure { 
+        		error_message: hint_result.unwrap_err().to_string(), 
+        		hint: String::from(""),
+        	});
+        }
+        
+        let hint = hint_result.unwrap();
 
 		cipher_comp_vec.remove(3);
 		let corrected_ciphertext = cipher_comp_vec.join(":");
     
-    	self.v1_client.decrypt(corrected_ciphertext.as_str())
+    	let decrypt_result = self.v1_client.decrypt(corrected_ciphertext.as_str());
+    	if decrypt_result.is_err() {
+    		return Err(ClientDecryptResultFailure { 
+        		error_message: decrypt_result.unwrap_err().error_message.clone(), 
+        		hint,
+        		});
+    	}
+    	    	
+    	Ok(ClientDecryptResultSuccess { 
+    		plaintext: decrypt_result.unwrap().plaintext.clone(),
+    		hint,
+		})    	    	
     }
     
     fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, String> {
