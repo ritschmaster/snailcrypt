@@ -35,6 +35,8 @@ use crate::{
 	util::Analyzer,
 };
 
+use std::rc::Rc;
+
 use chrono::{
     DateTime,
     FixedOffset,
@@ -50,7 +52,7 @@ pub struct V2Client {
  */
 impl V2Client {
     #[allow(unused)]
-    pub fn new(analyzer: Box<dyn Analyzer>, config: Box<dyn Config>) -> V2Client {
+    pub fn new(analyzer: Rc<dyn Analyzer>, config: Rc<dyn Config>) -> V2Client {
         return V2Client { 
         	v1_client: V1Client::new(analyzer, config) 
         };

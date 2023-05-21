@@ -36,7 +36,10 @@ use crate::{
 	util::Analyzer,
 };
 
-use std::io::Read;
+use std::{
+    rc::Rc,
+    io::Read,
+};
 
 use chrono::{
     DateTime,
@@ -62,13 +65,13 @@ const PLAINTEXT_CHUNK_SIZE: i32 = 126;
  */
 #[allow(unused)]
 pub struct V1Client {
-    analyzer: Box<dyn Analyzer>,
-    config: Box<dyn Config>,    
+    analyzer: Rc<dyn Analyzer>,
+    config: Rc<dyn Config>,
 }
 
 impl V1Client {
     #[allow(unused)]
-    pub fn new(analyzer: Box<dyn Analyzer>, config: Box<dyn Config>) -> V1Client {
+    pub fn new(analyzer: Rc<dyn Analyzer>, config: Rc<dyn Config>) -> V1Client {
         return V1Client { 
             analyzer: analyzer,
             config: config 
@@ -271,11 +274,11 @@ impl V1Client {
         Ok(cipher)
     }
     
-    pub fn get_analyzer(&self) -> &Box<dyn Analyzer> {
+    pub fn get_analyzer(&self) -> &Rc<dyn Analyzer> {
         return &self.analyzer;
     }
     
-    pub fn get_config(&self) -> &Box<dyn Config> {
+    pub fn get_config(&self) -> &Rc<dyn Config> {
 		return &self.config;
 	}
 }

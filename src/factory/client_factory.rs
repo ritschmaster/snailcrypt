@@ -29,12 +29,11 @@ pub use crate::{
 		V1Client,
 		V2Client,
 	},
-	config::Config,
-	factory::{
-		AnalyzerFactory,
-		ConfigFactory,
-	}
+    config::Config,
+    util::Analyzer,
 };
+
+use std::rc::Rc;
 
 /**
  * This factory produces clients.
@@ -64,47 +63,47 @@ pub use crate::{
  */
 #[allow(unused)]
 pub struct ClientFactory {
-	analyzer_factory: AnalyzerFactory,
-	config_factory: ConfigFactory
+    analyzer: Rc<dyn Analyzer>,
+    config: Rc<dyn Config>
 }
 
-impl ClientFactory {
+impl<'a> ClientFactory {
     #[allow(unused)]
-    pub fn new(analyzer_factory: AnalyzerFactory, config_factory: ConfigFactory) -> ClientFactory {
+    pub fn new(analyzer: Rc<dyn Analyzer>,
+            config: Rc<dyn Config>) -> ClientFactory {
         return ClientFactory { 
-			analyzer_factory: analyzer_factory,
-			config_factory: config_factory  
+			analyzer: analyzer,
+            config: config,
 		};
     }
 
     /**
      * Create a new client object using a specific version.
      */
-    pub fn create(&self, client_version: ClientVersion) -> Box<dyn Client> {        	
+    pub fn create(&self, client_version: ClientVersion) -> Rc<dyn Client> {
 		match client_version {
 			ClientVersion::V1 
 			=> 
-			return Box::new(V1Client::new(self.get_analyzer_factory().create(),
-        	   			           self.get_config_factory().create())),
+			return Rc::new(V1Client::new(Rc::clone(self.get_analyzer()),
+                                    Rc::clone(self.get_config()))),
         	ClientVersion::V2
         	=> 
-        	return Box::new(V2Client::new(self.get_analyzer_factory().create(),
-        								  self.get_config_factory().create()),
-        					)
+        	return Rc::new(V2Client::new(Rc::clone(self.get_analyzer()),
+                                        Rc::clone(self.get_config())))
         }
     }
     
     /**
-     * Get the analyzer factory
+     * Get the analyzer.
      */
-    pub fn get_analyzer_factory(&self) -> &AnalyzerFactory {
-		return &self.analyzer_factory;
+    pub fn get_analyzer(&self) -> &Rc<dyn Analyzer> {
+		return &self.analyzer;
 	}
     
     /**
-     * Get the configuraton factory
+     * Get the configuraton.
      */
-    pub fn get_config_factory(&self) -> &ConfigFactory {
-		return &self.config_factory
+    pub fn get_config(&self) -> &Rc<dyn Config> {
+		return &self.config
 	}
 }
