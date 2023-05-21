@@ -36,6 +36,32 @@ pub use crate::{
 	}
 };
 
+/**
+ * This factory produces clients.
+ *
+ * # Examples
+ *
+ * ## Directly specifying the client version
+ *
+ * ```
+ * let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+ * let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+ * let client_factory: factory::ClientFactory = factory::ClientFactory::new(analyzer_factory, config_factory);
+ * let client: Box<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+
+ * ```
+ *
+ * ## Using the client version extracted from the plaintext
+  * ```
+ * let plaintext: String = String::from("hello world");
+ *
+ * let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+ * let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+ * let client_factory: factory::ClientFactory = factory::ClientFactory::new(analyzer_factory, config_factory);
+ * let client: Box<dyn client::Client> = client_factory.create();
+
+ * ```
+ */
 #[allow(unused)]
 pub struct ClientFactory {
 	analyzer_factory: AnalyzerFactory,
@@ -51,6 +77,9 @@ impl ClientFactory {
 		};
     }
 
+    /**
+     * Create a new client object using a specific version.
+     */
     pub fn create(&self, client_version: ClientVersion) -> Box<dyn Client> {        	
 		match client_version {
 			ClientVersion::V1 
@@ -65,10 +94,16 @@ impl ClientFactory {
         }
     }
     
+    /**
+     * Get the analyzer factory
+     */
     pub fn get_analyzer_factory(&self) -> &AnalyzerFactory {
 		return &self.analyzer_factory;
 	}
     
+    /**
+     * Get the configuraton factory
+     */
     pub fn get_config_factory(&self) -> &ConfigFactory {
 		return &self.config_factory
 	}

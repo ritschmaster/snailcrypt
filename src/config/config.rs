@@ -22,6 +22,9 @@
   SOFTWARE.
 *******************************************************************************/
 
+/**
+ * This trait supplies the methods for a configuration consumed by client implementations.
+ */
 pub trait Config {
     fn get_api_url(&self) -> &str;
 }

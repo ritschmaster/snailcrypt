@@ -27,6 +27,9 @@ use crate::{
     util::Analyzer,
 };
 
+/**
+ * The default implementation of an analyzer.
+ */
 #[allow(unused)]
 pub struct DefaultAnalyzer {
 }

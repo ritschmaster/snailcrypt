@@ -22,6 +22,8 @@
   SOFTWARE.
 *******************************************************************************/
 
+extern crate chrono;
+
 use crate::{
 	client::{
 		Client,
@@ -55,6 +57,9 @@ use openssl::{
 
 const PLAINTEXT_CHUNK_SIZE: i32 = 126;
 
+/**
+ * This object implements the version 1 of snailcrypt strings. The version 1 allows encrypting an arbitary string until a specified date.
+ */
 #[allow(unused)]
 pub struct V1Client {
     analyzer: Box<dyn Analyzer>,

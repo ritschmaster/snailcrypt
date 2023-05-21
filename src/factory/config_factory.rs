@@ -31,6 +31,9 @@ pub use crate::config::{
 pub struct ConfigFactory {
 }
 
+/**
+ * This factory produces configurations.
+ */
 impl ConfigFactory {
     #[allow(unused)]
     pub fn new() -> ConfigFactory {

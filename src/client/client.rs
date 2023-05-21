@@ -32,23 +32,35 @@ use chrono::{
     FixedOffset,
 };
 
+/**
+ * Enumeration for the available client versions. This can be used to identify the client object you are using.
+ */
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClientVersion {
     V1,
     V2,
 }
 
+/**
+ * Input parameter structure to encrypt something using a client object.
+ */
 pub struct ClientEncryptArg {
 	pub plaintext: String,
 	pub lockdate: DateTime<FixedOffset>,
 	pub hint: String,
 }
 
+/**
+ * Result parameter structure on success after decrypting something using a client object.
+ */
 pub struct ClientDecryptResultSuccess {
 	pub plaintext: String,
 	pub hint: String,
 }
 
+/**
+ * This method will just print the plain text for a decryption result.
+ */
 impl string::ToString for ClientDecryptResultSuccess {
 	fn to_string(&self) -> String {
     	return self.plaintext
@@ -56,6 +68,9 @@ impl string::ToString for ClientDecryptResultSuccess {
 	}
 }
 
+/**
+ * This method will print the plain text and the hint (if available) for a decryption result.
+ */
 impl fmt::Debug for ClientDecryptResultSuccess {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     	f.debug_struct("ClientDecryptResultSuccess")
@@ -65,11 +80,17 @@ impl fmt::Debug for ClientDecryptResultSuccess {
 	}
 }
 
+/**
+ * Result parameter structure on failure after decrypting something using a client object.
+ */
 pub struct ClientDecryptResultFailure {
 	pub error_message: String,
 	pub hint: String,
 }
 
+/**
+ * This method will just print the error message.
+ */
 impl string::ToString for ClientDecryptResultFailure {
 	fn to_string(&self) -> String {
     	return self.error_message
@@ -77,6 +98,9 @@ impl string::ToString for ClientDecryptResultFailure {
 	}
 }
 
+/**
+ * This method will print the error message and the hint (if available) for a decryption result.
+ */
 impl fmt::Debug for ClientDecryptResultFailure {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     	f.debug_struct("ClientDecryptResultFailure")
@@ -86,6 +110,9 @@ impl fmt::Debug for ClientDecryptResultFailure {
 	}
 }
 
+/**
+ * This method enables stringifying the client version easily.
+ */
 impl fmt::Display for ClientVersion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
@@ -95,6 +122,11 @@ impl fmt::Display for ClientVersion {
     }
 }
 
+/**
+ * This is the main trait of this library. It will provide everything needed to perform an encryption or an decryption using the services available on snailcrypt.com.
+ *
+ *
+ */
 pub trait Client {
     fn encrypt(&self, args: &ClientEncryptArg) 
     	-> 

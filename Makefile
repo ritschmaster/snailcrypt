@@ -15,6 +15,12 @@ cbindgen:
 audit:
 	cargo audit bin target/release/snailcrypt
 
+doc:
+	cargo doc
+
+publish:
+	cargo publish
+
 .PHONY = all \
 	debug \
 	cbindge \

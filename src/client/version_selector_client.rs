@@ -34,6 +34,9 @@ use serde_json::Value;
 pub struct VersionSelectorClient {
 }
 
+/**
+ * This object implements an automatic switch between the available versions of the clients. Depending on the input parameters for the encryption and decryption it will automatically choose the applicable client version and uses its implementation for the requested operation.
+ */
 impl VersionSelectorClient {
     #[allow(unused)]
     pub fn new(api_url: &str) -> VersionSelectorClient {
