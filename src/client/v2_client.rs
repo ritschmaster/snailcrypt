@@ -47,9 +47,7 @@ pub struct V2Client {
 	v1_client: V1Client,
 }
 
-/**
- * This object implements the version 2 of snailcrypt strings. The version 2 allows encrypting an arbitary string until a specified date. It also allows the inclusion of a hint string which is not encrypted.
- */
+/// This object implements the version 2 of snailcrypt strings. The version 2 allows encrypting an arbitary string until a specified date. It also allows the inclusion of a hint string which is not encrypted.
 impl V2Client {
     #[allow(unused)]
     pub fn new(analyzer: Rc<dyn Analyzer>, config: Rc<dyn Config>) -> V2Client {

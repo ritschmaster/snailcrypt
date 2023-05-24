@@ -29,9 +29,7 @@ pub use crate::util::{
 
 use std::rc::Rc;
 
-/**
- * This factory produces analyzers.
- */
+/// This factory produces analyzers.
 #[allow(unused)]
 pub struct AnalyzerFactory {
 }
@@ -42,6 +40,7 @@ impl AnalyzerFactory {
         return AnalyzerFactory { };
     }
 
+    /// Create a new analyzer object
     pub fn create(&self) -> Rc<dyn Analyzer> {
         return Rc::new(DefaultAnalyzer::new());
     }

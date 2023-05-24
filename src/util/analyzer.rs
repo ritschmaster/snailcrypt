@@ -24,17 +24,11 @@
 
 use crate::client::ClientVersion;
 
-/**
- * This trait supplies the function to use something as an analyzer. The main function of an analzyer object is to determine which client version a cipher text is using.
- */
+/// This trait supplies the function to use something as an analyzer. The main function of an analzyer object is to determine which client version a cipher text is using.
 pub trait Analyzer {
-    /**
-     * Get the client version a cipher text is using.
-     */
+    /// Get the client version a cipher text is using.
     fn get_version(&self, ciphertext: &str) -> Result<ClientVersion, String>;
             
-    /**
-     * Parse a string and return the client version enumeration number.
-     */
+    /// Parse a string and return the client version enumeration number.
     fn str_to_version(&self, client_version: &str) -> Result<ClientVersion, String>;
 }

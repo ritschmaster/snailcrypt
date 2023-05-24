@@ -24,9 +24,7 @@
 
 use crate::config::Config;
 
-/**
- * The default implementation for a configuration object.
- */
+/// The default implementation for a configuration object.
 pub struct DefaultConfig {
     api_url: String,	
 }

@@ -33,15 +33,14 @@ use std::rc::Rc;
 pub struct ConfigFactory {
 }
 
-/**
- * This factory produces configurations.
- */
+/// This factory produces configurations.
 impl ConfigFactory {
     #[allow(unused)]
     pub fn new() -> ConfigFactory {
         return ConfigFactory { };
     }
 
+    /// Create a new configuration object
     pub fn create(&self) -> Rc<dyn Config> {
         return Rc::new(DefaultConfig::new());
     }
