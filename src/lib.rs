@@ -112,7 +112,7 @@ mod tests {
   
 		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -127,7 +127,6 @@ mod tests {
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
-
 
         let result_success = client
         	.decrypt(cipher
@@ -165,7 +164,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
           
 		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -208,7 +207,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
                 
 		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -307,7 +306,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         
 		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V2);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -371,7 +370,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         
 		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V2);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -414,7 +413,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
   
         let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+        let client: Rc<dyn client::Client> = client_factory.create();
 
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -430,12 +429,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             panic!("Error: {:?}", error);
         });
 
-        let client_decryption: Rc<dyn client::Client> = client_factory.create(analyzer
-            .get_version(cipher
-                .as_str())
-            .unwrap_or_else(|error| {
-                panic!("Error: {:?}", error);
-            }));
+        let client_decryption: Rc<dyn client::Client> = client_factory.create();
         let result_success = client_decryption
             .decrypt(cipher
                 .as_str())
@@ -472,7 +466,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
           
         let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                                         Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
+        let client: Rc<dyn client::Client> = client_factory.create();
         
         let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
                                                                        client.get_datetime_format())
@@ -488,12 +482,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             panic!("Error: {:?}", error);
         });
 
-        let client_decryption: Rc<dyn client::Client> = client_factory.create(analyzer
-            .get_version(cipher
-                .as_str())
-            .unwrap_or_else(|error| {
-                panic!("Error {:?}", error);
-            }));
+        let client_decryption: Rc<dyn client::Client> = client_factory.create();
         let result_success = client_decryption
             .decrypt(cipher
                .as_str())
@@ -507,111 +496,4 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         assert_eq!("",
                    result_success.hint.as_str());
     }
-/*
-    #[test]
-    fn encrypt_version_selector_small_str() {
-        let plaintext_orig: String = String::from("hello world");
-
-        let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
-        let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
-   
-        let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
-        let config: Rc<dyn config::Config> = config_factory.create();
-  
-        let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
-                                        Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
-
-        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
-                                                                       client.get_datetime_format())
-            .unwrap_or_else(|error| {
-            panic!("Error: {:?}", error);
-        });
-
-        let cipher: String = client.encrypt(&client::ClientEncryptArg {
-            plaintext: plaintext_orig.clone(),
-            lockdate,
-            hint: String::from(""),
-        }).unwrap_or_else(|error| {
-            panic!("Error: {:?}", error);
-        });
-
-        let client_decryption: Rc<dyn client::Client> = client_factory.create(analyzer
-            .get_version(cipher
-                .as_str())
-            .unwrap_or_else(|error| {
-                panic!("Error: {:?}", error);
-            }));
-        let result_success = client_decryption
-            .decrypt(cipher
-                .as_str())
-               .unwrap_or_else(|error| {
-                   panic!("Error: {:?}", error.error_message);
-            });
-
-        assert_eq!(plaintext_orig.as_str(),
-                   result_success.plaintext.as_str());
-                   
-        assert_eq!("",
-                   result_success.hint.as_str());
-    }
-
-    #[test]
-    fn encrypt_version_selector_large_str() {
-        let plaintext_orig: String =
-            String::from("Nullam eu ante vel est convallis dignissim.  Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo,
-quis tempor ligula erat quis odio.  Nunc porta vulputate tellus.
-Nunc rutrum turpis sed pede.  Sed bibendum.  Aliquam posuere.
-Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada
-massa, quis varius mi purus non odio.  Pellentesque condimentum,
-magna ut suscipit hendrerit, ipsum augue ornare nulla, non
-luctus diam neque sit amet urna.  Curabitur vulputate vestibulum
-lorem.  Fusce sagittis, libero non molestie mollis, magna orci
-ultrices dolor, at vulputate neque nulla lacinia eros.  Sed id ligula
-quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
-           
-           let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
-        let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
-        
-        let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
-        let config: Rc<dyn config::Config> = config_factory.create();
-          
-        let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
-                                        Rc::clone(&config));
-        let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
-        
-        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
-                                                                       client.get_datetime_format())
-            .unwrap_or_else(|error| {
-            panic!("Error: {:?}", error);
-        });
-
-        let cipher: String = client.encrypt(&client::ClientEncryptArg{
-            plaintext: plaintext_orig.clone(),
-            lockdate,
-            hint: String::from(""),
-        }).unwrap_or_else(|error| {
-            panic!("Error: {:?}", error);
-        });
-
-        let client_decryption: Rc<dyn client::Client> = client_factory.create(analyzer
-            .get_version(cipher
-                .as_str())
-            .unwrap_or_else(|error| {
-                panic!("Error {:?}", error);
-            }));
-        let result_success = client_decryption
-            .decrypt(cipher
-               .as_str())
-               .unwrap_or_else(|error| {
-                panic!("Error: {:?}", error.error_message);
-            });
-        
-        assert_eq!(plaintext_orig.as_str(),
-                   result_success.plaintext.as_str());
-                   
-        assert_eq!("",
-                   result_success.hint.as_str());
-    }
-*/
 }

@@ -40,7 +40,7 @@ let config: Rc<dyn config::Config> = config_factory.create();
 
 let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                             Rc::clone(&config));
-let client: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V2);
+let client: Rc<dyn client::Client> = client_factory.create();
 
 
 let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
@@ -53,26 +53,13 @@ let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00
  * Perform encryption using the client
  */
 let cipher: String = client.encrypt(&client::ClientEncryptArg {
-    plaintext,
-    lockdate,
-    hint,
-    }).unwrap_or_else(|error| {
+        plaintext,
+        lockdate,
+        hint,
+    })
+    .unwrap_or_else(|error| {
         panic!("Error: {:?}", error);
     });
-
-/**
- * If you do not need a hint, then you can opt for a V1 client instead
- */
-let client_v1: Rc<dyn client::Client> = client_factory.create(client::ClientVersion::V1);
-
-let cipher_v1: String = client_v1.encrypt(&client::ClientEncryptArg {
-    plaintext,
-    lockdate,
-    hint: String::from(""),
-    }).unwrap_or_else(|error| {
-        panic!("Error: {:?}", error);
-    });
-
 ```
 
 ### Decrypting a string
@@ -110,12 +97,7 @@ let config: Rc<dyn config::Config> = config_factory.create();
 
 let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
                             Rc::clone(&config));
-let client: Rc<dyn client::Client> = client_factory.create(analyzer
-    .get_version(cipher
-        .as_str())
-    .unwrap_or_else(|error| {
-        panic!("Error: {:?}", error);
-    }));
+let client: Rc<dyn client::Client> = client_factory.create();
 
 /**
  * Perform decryption using the client
@@ -126,6 +108,6 @@ let result = client
         panic!("Error: {:?}", error.error_message);
     });   
 
-println!("{}, result.plaintext.as_str());     
-println!("{}, result.hint.as_str());
+println!("{}", result.plaintext.as_str());     
+println!("{}", result.hint.as_str());
 ```
