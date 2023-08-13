@@ -37,6 +37,7 @@ use chrono::{
 pub enum ClientVersion {
     V1,
     V2,
+	V3,
 }
 
 /// Input parameter structure to encrypt something using a client object.
@@ -44,12 +45,14 @@ pub struct ClientEncryptArg {
 	pub plaintext: String,
 	pub lockdate: DateTime<FixedOffset>,
 	pub hint: String,
+	pub filename: String,
 }
 
 /// Result parameter structure on success after decrypting something using a client object.
 pub struct ClientDecryptResultSuccess {
 	pub plaintext: String,
 	pub hint: String,
+	pub filename: String,
 }
 
 /// This method will just print the plain text for a decryption result.
@@ -74,6 +77,7 @@ impl fmt::Debug for ClientDecryptResultSuccess {
 pub struct ClientDecryptResultFailure {
 	pub error_message: String,
 	pub hint: String,
+	pub filename: String,
 }
 
 /// This method will just print the error message.
@@ -100,6 +104,7 @@ impl fmt::Display for ClientVersion {
 		match self {
 			ClientVersion::V1 => write!(f, "1"),
 			ClientVersion::V2 => write!(f, "2"),
+			ClientVersion::V3 => write!(f, "3"),
 		}        
     }
 }

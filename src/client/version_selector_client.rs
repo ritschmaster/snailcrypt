@@ -31,6 +31,7 @@ pub use crate::{
         ClientDecryptResultFailure,
         V1Client,
         V2Client,
+        V3Client,
     },
     util::Analyzer,
 };
@@ -47,6 +48,7 @@ pub struct VersionSelectorClient {
     analyzer: Rc<dyn Analyzer>,
     v1_client: Rc<dyn Client>,
     v2_client: Rc<dyn Client>,
+    v3_client: Rc<dyn Client>,
 }
 
 /// This object implements an automatic switch between the available versions of the clients. Depending on the input parameters for the encryption and decryption it will automatically choose the applicable client version and uses its implementation for the requested operation.
@@ -54,11 +56,12 @@ pub struct VersionSelectorClient {
 /// NOT IMPLEMENTED YET
 impl VersionSelectorClient {
     #[allow(unused)]
-    pub fn new(analyzer: Rc<dyn Analyzer>, v1_client: Rc<dyn Client>, v2_client: Rc<dyn Client>) -> VersionSelectorClient {
+    pub fn new(analyzer: Rc<dyn Analyzer>, v1_client: Rc<dyn Client>, v2_client: Rc<dyn Client>, v3_client: Rc<dyn Client>) -> VersionSelectorClient {
         return VersionSelectorClient {
             analyzer,
             v1_client,
             v2_client,
+            v3_client,
         };
     }
     
@@ -71,7 +74,9 @@ impl Client for VersionSelectorClient {
     fn encrypt(&self, args: &ClientEncryptArg)
         ->
         Result<String, String> {
-        if args.hint.len() > 0 {
+        if args.filename.len() > 0 {
+            self.v3_client.encrypt(args)
+        } else if args.hint.len() > 0 {
             self.v2_client.encrypt(args)
         } else {
             self.v1_client.encrypt(args)
@@ -91,6 +96,7 @@ impl Client for VersionSelectorClient {
             return Err(ClientDecryptResultFailure {
                 error_message: result.unwrap_err(),
                 hint: String::from(""),
+        		filename: String::from(""),
             });
         }
         
@@ -99,6 +105,7 @@ impl Client for VersionSelectorClient {
         match version {
             ClientVersion::V1 => return self.v1_client.decrypt(ciphertext),
             ClientVersion::V2 => return self.v2_client.decrypt(ciphertext),
+            ClientVersion::V3 => return self.v3_client.decrypt(ciphertext),
         }
     }
     

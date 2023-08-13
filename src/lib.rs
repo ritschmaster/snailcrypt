@@ -27,16 +27,25 @@ pub mod config;
 pub mod factory;
 pub mod util;
 
-// #[no_mangle]
-// pub extern "C" fn add(left: usize, right: usize) -> usize {
-//     left + right
-// }
+#[no_mangle]
+pub extern "C" fn snailcrypt_ez_encrypt(left: usize, right: usize) -> usize {
+    left + right
+}
+
+#[no_mangle]
+pub extern "C" fn snailcrypt_ez_decrypt(left: usize, right: usize) -> usize {
+    left + right
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     
-    use std::rc::Rc;
+    use std::{
+        fs,
+        path::Path,
+        rc::Rc,
+    };
 
     use chrono::{
         DateTime,
@@ -124,6 +133,7 @@ mod tests {
         	plaintext: plaintext_orig.clone(),
         	lockdate,
         	hint: String::from(""),
+        	filename: String::from(""),
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -176,6 +186,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         	plaintext: plaintext_orig.clone(),
         	lockdate,
         	hint: String::from(""),
+        	filename: String::from(""),
 		}).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -219,6 +230,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         	plaintext: plaintext_orig,
         	lockdate,
         	hint: String::from(""),
+        	filename: String::from(""),
 		}).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -318,6 +330,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         	plaintext: plaintext_orig.clone(),
         	lockdate,
         	hint: hint_orig.clone(),
+            filename: String::from(""),
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -382,6 +395,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
         	plaintext: plaintext_orig.clone(),
         	lockdate,
         	hint: hint_orig.clone(),
+            filename: String::from("")
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -399,6 +413,185 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
                    
         assert_eq!(hint_orig.as_str(),
         		   result_success.hint.as_str());
+	}
+
+    #[test]    
+    fn version_v3_parse_ok() {
+		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+		let analyzer = analyzer_factory.create();
+	
+		/* Arbitary text */	
+		assert!(analyzer.get_version("3:asdf:asdf:asdf:asdf")
+						   .unwrap_or_else(|error| { 
+								panic!("Error: {:?}", error); 
+							})
+				==
+				client::ClientVersion::V3);
+				
+		/* Actual cipher text */	
+		assert!(analyzer.get_version("3:MjAyMi0xMS0xOVQxNzowMDowMCswMTAw:jbTjg8y9U5g95BP/LKQHbE2pSBDYFnILpgFbqFfqXbdMYUGUh3v1R040d+eHZuYzOe55qKf8Q16J8zvawKmMejhlVGTOhLHobnJvtL08S184v9/HxGL1A1ZrtgoAiuxd7DZLLxAOQSzJoBlRG2jz9AhcCQI5pXn1EujvMICv2dusnmrjuzxPRnu2NtaXJNpzEycGSwTxoXuxWOb93YXaJlVOcS7mMjSQG5tLBA84AYFoeqJcERITSzsRcckMU0uOEWLm66OtiLrDRgmRo/0xSUIn+kocjI7RExl1FgeeqppDuR1C9CgCrIicSbvsiqn6zlrf1wyz+lMw0sUGOCU3xQ==:asdf:test.txt")
+						   .unwrap_or_else(|error| { 
+								panic!("Error: {:?}", error); 
+							})
+				==
+				client::ClientVersion::V3);		
+	}
+
+    #[test]
+    fn version_v3_parse_nok() {
+		let mut error_thrown: bool;
+	
+		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+		let analyzer = analyzer_factory.create();
+	
+		/* Arbitary text */	
+		error_thrown = false;
+		analyzer.get_version(":asdf:asdf:asdf")
+			    .unwrap_or_else(|error| {					
+					assert_eq!(error.to_string().as_str(),
+							   "Unknown client version: ");
+							 
+					error_thrown = true;								
+					return client::ClientVersion::V3;
+				});
+		assert_eq!(error_thrown, true);
+				
+		/* Actual cipher text */			
+		error_thrown = false;
+		analyzer.get_version("MjAyMi0xMS0xOVQxNzowMDowMCswMTAw:jbTjg8y9U5g95BP/LKQHbE2pSBDYFnILpgFbqFfqXbdMYUGUh3v1R040d+eHZuYzOe55qKf8Q16J8zvawKmMejhlVGTOhLHobnJvtL08S184v9/HxGL1A1ZrtgoAiuxd7DZLLxAOQSzJoBlRG2jz9AhcCQI5pXn1EujvMICv2dusnmrjuzxPRnu2NtaXJNpzEycGSwTxoXuxWOb93YXaJlVOcS7mMjSQG5tLBA84AYFoeqJcERITSzsRcckMU0uOEWLm66OtiLrDRgmRo/0xSUIn+kocjI7RExl1FgeeqppDuR1C9CgCrIicSbvsiqn6zlrf1wyz+lMw0sUGOCU3xQ==:asdf:test.txt")				
+				.unwrap_or_else(|error| { 
+					assert_eq!(error.to_string().as_str(),
+							   "Unknown client version: MjAyMi0xMS0xOVQxNzowMDowMCswMTAw");
+							 
+					error_thrown = true;
+					
+					return client::ClientVersion::V3;
+				});		
+		assert_eq!(error_thrown, true);
+	}
+
+    #[test]
+    fn encrypt_v3_small_str() {
+        let filename_orig = String::from("encrypt_v3_small_str.txt");
+
+        let mut path_string = String::from(option_env!("CARGO_MANIFEST_DIR").unwrap());
+        path_string.push_str("/test/");
+        path_string.push_str(filename_orig.as_str());
+
+        let path = Path::new(path_string.as_str());
+        let plaintext_orig_bytes = fs::read(path).unwrap();
+
+        let plaintext_orig: String = base64::encode(plaintext_orig_bytes.as_slice());
+        let hint_orig = String::from("This is a test message");
+
+ 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+        let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
+   
+		let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+        let config: Rc<dyn config::Config> = config_factory.create();
+        
+		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
+                                        Rc::clone(&config));
+        let client: Rc<dyn client::Client> = client_factory.create();
+
+        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
+                                                                       client.get_datetime_format())
+            .unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+        let cipher: String = client.encrypt(&client::ClientEncryptArg {
+        	plaintext: plaintext_orig.clone(),
+        	lockdate,
+        	hint: hint_orig.clone(),
+            filename: filename_orig.clone(),
+        }).unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+
+        let result_success = client
+        	.decrypt(cipher
+	       		.as_str())
+	       	.unwrap_or_else(|error| {
+            	panic!("Error: {:?}", error.error_message);
+	       	});
+
+        assert_eq!(plaintext_orig.as_str(),
+                   result_success.plaintext.as_str());
+                   
+        assert_eq!(hint_orig.as_str(),
+        		   result_success.hint.as_str());
+
+       assert_eq!(filename_orig.as_str(),
+        		  result_success.filename.as_str());
+	}
+
+	#[test]
+    fn encrypt_v3_larg_str() {
+		let filename_orig = String::from("encrypt_v3_large_str.pdf");
+
+        let mut path_string = String::from(option_env!("CARGO_MANIFEST_DIR").unwrap());
+        path_string.push_str("/test/");
+        path_string.push_str(filename_orig.as_str());
+
+        let path = Path::new(path_string.as_str());
+        let plaintext_orig_bytes = fs::read(path).unwrap();
+
+        let plaintext_orig: String = base64::encode(plaintext_orig_bytes.as_slice());
+        let hint_orig = 
+        	String::from("Nullam eu ante vel est convallis dignissim.  Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, 
+quis tempor ligula erat quis odio.  Nunc porta vulputate tellus.  
+Nunc rutrum turpis sed pede.  Sed bibendum.  Aliquam posuere.  
+Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada 
+massa, quis varius mi purus non odio.  Pellentesque condimentum, 
+magna ut suscipit hendrerit, ipsum augue ornare nulla, non 
+luctus diam neque sit amet urna.  Curabitur vulputate vestibulum 
+lorem.  Fusce sagittis, libero non molestie mollis, magna orci 
+ultrices dolor, at vulputate neque nulla lacinia eros.  Sed id ligula
+quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
+
+ 		let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+        let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
+   
+		let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+        let config: Rc<dyn config::Config> = config_factory.create();
+        
+		let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
+                                        Rc::clone(&config));
+        let client: Rc<dyn client::Client> = client_factory.create();
+
+        let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str("2022-11-19T17:00:00+0100",
+                                                                       client.get_datetime_format())
+            .unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+        let cipher: String = client.encrypt(&client::ClientEncryptArg {
+        	plaintext: plaintext_orig.clone(),
+        	lockdate,
+        	hint: hint_orig.clone(),
+            filename: filename_orig.clone(),
+        }).unwrap_or_else(|error| {
+            panic!("Error: {:?}", error);
+        });
+
+
+        let result_success = client
+        	.decrypt(cipher
+	       		.as_str())
+	       	.unwrap_or_else(|error| {
+            	panic!("Error: {:?}", error.error_message);
+	       	});
+
+        assert_eq!(plaintext_orig.as_str(),
+                   result_success.plaintext.as_str());
+                   
+        assert_eq!(hint_orig.as_str(),
+        		   result_success.hint.as_str());
+
+       assert_eq!(filename_orig.as_str(),
+        		  result_success.filename.as_str());
 	}
  
     #[test]
@@ -425,6 +618,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             plaintext: plaintext_orig.clone(),
             lockdate,
             hint: String::from(""),
+            filename: String::from(""),
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });
@@ -478,6 +672,7 @@ quis est convallis tempor.  Curabitur lacinia pulvinar nibh.  Nam a sapien.");
             plaintext: plaintext_orig.clone(),
             lockdate,
             hint: String::from(""),
+            filename: String::from(""),
         }).unwrap_or_else(|error| {
             panic!("Error: {:?}", error);
         });

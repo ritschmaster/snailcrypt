@@ -28,6 +28,7 @@ pub use crate::{
 		Client,
         V1Client,
         V2Client,
+        V3Client,
 		VersionSelectorClient,
 	},
     config::Config,
@@ -87,6 +88,10 @@ impl ClientFactory {
                         Rc::clone(self.get_config()))),
                 Rc::new(
                     V2Client::new(
+                        Rc::clone(self.get_analyzer()),
+                        Rc::clone(self.get_config()))),
+                Rc::new(
+                    V3Client::new(
                         Rc::clone(self.get_analyzer()),
                         Rc::clone(self.get_config())))));
     }

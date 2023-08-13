@@ -371,6 +371,7 @@ impl Client for V1Client {
 			return Err(ClientDecryptResultFailure { 
 				error_message: private_key_result.unwrap_err(), 
 				hint: String::from(""),
+				filename: String::from(""),
 			});
 		}		
 
@@ -445,7 +446,8 @@ impl Client for V1Client {
            
 		Ok(ClientDecryptResultSuccess { 
 			plaintext, 
-			hint: String::from("") 
+			hint: String::from(""),
+			filename: String::from(""),
 		})
     }
     

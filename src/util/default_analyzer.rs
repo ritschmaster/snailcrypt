@@ -59,6 +59,7 @@ impl Analyzer for DefaultAnalyzer {
 		match client_version {
 			"1" => Ok(ClientVersion::V1),
 			"2" => Ok(ClientVersion::V2),			
+			"3" => Ok(ClientVersion::V3),			
 			_   => Err(format!("Unknown client version: {}", client_version)),
 		}
 	}

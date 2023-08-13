@@ -29,7 +29,7 @@ use crate::{
 		ClientEncryptArg,
 		ClientDecryptResultSuccess,
 		ClientDecryptResultFailure,		
-		V1Client,
+		V2Client,
 	},
 	config::Config,
 	util::Analyzer,
@@ -43,32 +43,32 @@ use chrono::{
 };
 
 #[allow(unused)]
-pub struct V2Client {
-	v1_client: V1Client,
+pub struct V3Client {
+	v2_client: V2Client,
 }
 
-/// This object implements the version 2 of snailcrypt strings. The version 2 allows encrypting an arbitary string until a specified date. It also allows the inclusion of a hint string which is not encrypted.
-impl V2Client {
+/// This object implements the version 3 of snailcrypt strings. The version 3 allows encrypting an arbitary file until a specified date.
+impl V3Client {
     #[allow(unused)]
-    pub fn new(analyzer: Rc<dyn Analyzer>, config: Rc<dyn Config>) -> V2Client {
-        return V2Client { 
-        	v1_client: V1Client::new(analyzer, config) 
+    pub fn new(analyzer: Rc<dyn Analyzer>, config: Rc<dyn Config>) -> V3Client {
+        return V3Client { 
+        	v2_client: V2Client::new(analyzer, config) 
         };
     }
 }
 
-impl Client for V2Client {
+impl Client for V3Client {
     fn encrypt(&self, args: &ClientEncryptArg) -> Result<String, String> {
 		/**********************************************************************
-		 * Use the v1 client to encrypt the string.
+		 * Use the v2 client to encrypt the string.
 		 */
-     	let encrypt_result = self.v1_client.encrypt(&ClientEncryptArg { 
+    	let encrypt_result = self.v2_client.encrypt(&ClientEncryptArg { 
 	    	plaintext: args.plaintext.clone(),
 	    	lockdate: args.lockdate, 
-	    	hint: String::from(""),
-        	filename: String::from(""),
+	    	hint: args.hint.clone(),
+	    	filename: String::from(""),
     	});
-
+    	
 		/**********************************************************************
 		 * Exit out on error
 		 */
@@ -77,52 +77,52 @@ impl Client for V2Client {
     	}
     	
 		/**********************************************************************
-		 * Split the final cipher text from v1 to manipulate it later on
+		 * Split the final cipher text from v2 to manipulate it later on
 		 */
-     	let encrypted = encrypt_result.unwrap();
+    	let encrypted = encrypt_result.unwrap();
     	let mut cipher_comp_vec: Vec<&str> = encrypted
     		.split_terminator(':')
     		.collect(); 
-
+		
 		/**********************************************************************
 		 * Remove the version indicator
-		 */   	
-     	cipher_comp_vec.remove(0);
- 
- 		/**********************************************************************
-		 * Use the cipher text from v1 without the version indicator
+		 */
+    	cipher_comp_vec.remove(0);
+    	
+		/**********************************************************************
+		 * Use the cipher text from v2 without the version indicator
 		 */
     	let corrected_ciphertext: String = cipher_comp_vec
     		.join(":");
     		
 		/**********************************************************************
-		 * Build up the cipher text for v2 using the result from v1
+		 * Build up the cipher text for v3 using the result from v2
 		 */
     	let mut final_ciphertext: String = self.get_client_version()
     		.to_string();
     	final_ciphertext.push_str(":");
     	final_ciphertext.push_str(corrected_ciphertext.as_str());
     	final_ciphertext.push_str(":");
-    	final_ciphertext.push_str(base64::encode(args.hint.as_str()).as_str());
-    	
+    	final_ciphertext.push_str(base64::encode(args.filename.as_str()).as_str());
+     	
 		Ok(final_ciphertext)
     }
 
     fn decrypt(&self, ciphertext: &str) 
     	-> Result<ClientDecryptResultSuccess, ClientDecryptResultFailure> {
     	let mut cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
-		
+
 		/**********************************************************************
-		 * Verify the cipher text 
+		 * Verify the cipher text
 		 */
-        if cipher_comp_vec.len() != 4 {
+        if cipher_comp_vec.len() != 5 {
             return Err(ClientDecryptResultFailure { 
-        		error_message: String::from("Cipher is invalid. It must consist of 4 components separted by a colon."),
+        		error_message: String::from("Cipher is invalid. It must consist of 5 components separted by a colon."),
         		hint: String::from(""),
         		filename: String::from(""),
         	});
         }
-  		
+
 		/**********************************************************************
 		 * Try to decode the BASE64 string of the hint and exit out on error
 		 */
@@ -134,7 +134,7 @@ impl Client for V2Client {
         		filename: String::from(""),
         	});
         }        
- 		
+
 		/**********************************************************************
 		 * Try to create an UTF-8 string from the decoded BASE64 hint and 
 		 * exit out on error        
@@ -147,35 +147,66 @@ impl Client for V2Client {
         		filename: String::from(""),
         	});
         }
-        
+ 		
 		/**********************************************************************
   		 * Finally extracts the hint
   		 */      
         let hint = hint_result.unwrap();
 
+		/**********************************************************************
+		 * Try to decode the BASE64 string of the filename and exit out on 
+		 * error
+		 */
+        let filename_base64_result = base64::decode(cipher_comp_vec[4]);
+        if filename_base64_result.is_err() {
+        	return Err(ClientDecryptResultFailure { 
+        		error_message: filename_base64_result.unwrap_err().to_string(), 
+        		hint,
+        		filename: String::from(""),
+        	});
+        }        
+
+		/**********************************************************************
+		 * Try to create an UTF-8 string from the decoded BASE64 filename and 
+		 * exit out on error        
+		 */
+        let filename_result = String::from_utf8(filename_base64_result.unwrap());
+        if filename_result.is_err() {
+        	return Err(ClientDecryptResultFailure { 
+        		error_message: filename_result.unwrap_err().to_string(), 
+        		hint,
+        		filename: String::from(""),
+        	});
+        }
+		
+		/**********************************************************************
+  		 * Finally extracts the filename
+  		 */      
+        let filename = filename_result.unwrap();
+
 		cipher_comp_vec.remove(3);
 		let corrected_ciphertext = cipher_comp_vec.join(":");
     
-    	let decrypt_result = self.v1_client.decrypt(corrected_ciphertext.as_str());
+    	let decrypt_result = self.v2_client.decrypt(corrected_ciphertext.as_str());
     	if decrypt_result.is_err() {
     		return Err(ClientDecryptResultFailure { 
         		error_message: decrypt_result.unwrap_err().error_message.clone(), 
         		hint,
-        		filename: String::from(""),
+        		filename,
         	});
     	}
     	    	
     	Ok(ClientDecryptResultSuccess { 
     		plaintext: decrypt_result.unwrap().plaintext.clone(),
     		hint,
-        	filename: String::from(""),
+			filename,
 		})    	    	
     }
     
     fn lockdate_from_snailcrypt_cipher(&self, ciphertext: &str) -> Result<DateTime<FixedOffset>, String> {
         let cipher_comp_vec: Vec<&str> = ciphertext.split_terminator(':').collect();
 
-        if cipher_comp_vec.len() != 4 {
+        if cipher_comp_vec.len() != 5 {
             // Err("Cipher is invalid. It must consist of two components separted by a colon.")
             panic!("Cipher is invalid. It must consist of 4 components separted by a colon.");
         }
@@ -200,10 +231,10 @@ impl Client for V2Client {
     }
         
     fn get_datetime_format(&self) -> &str {
-    	self.v1_client.get_datetime_format()
+    	self.v2_client.get_datetime_format()
     }
     
 	fn get_client_version(&self) -> ClientVersion {
-		return ClientVersion::V2
+		return ClientVersion::V3
 	}
 }
