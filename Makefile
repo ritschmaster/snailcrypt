@@ -1,4 +1,4 @@
-PROJECT=libsnailcrypt
+PROJECT=snailcrypt
 
 all:
 	cargo auditable build --release
@@ -8,6 +8,13 @@ debug:
 
 check:
 	cargo test
+
+check-ctest: debug cbindgen
+	mkdir -p target/debug/ctest
+
+	cc -Itarget -o target/debug/ctest/ctest ctest/main.c -Ltarget/debug -lsnailcrypt
+
+	./target/debug/ctest/ctest
 
 cbindgen:
 	~/.cargo/bin/cbindgen --config cbindgen.toml --crate $(PROJECT) --output target/snailcrypt.h
@@ -22,6 +29,9 @@ publish:
 	cargo publish
 
 .PHONY = all \
+	doc \
 	debug \
-	cbindge \
-	audit
+	check \
+	cbindgen \
+	doc \
+	publish

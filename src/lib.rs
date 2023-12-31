@@ -27,14 +27,166 @@ pub mod config;
 pub mod factory;
 pub mod util;
 
+use std::{
+    ffi::{
+        c_char,
+        CStr,
+        CString,
+    },
+    str::FromStr,
+    rc::Rc,
+};
+use chrono::{
+    DateTime,
+    FixedOffset,
+};
+
+type SnailcryptEzEncryptionCallback = unsafe extern fn(cipher: *const c_char) -> i32;
+type SnailcryptEzDecryptionCallback = unsafe extern fn(plaintext: *const c_char, hint: *const c_char, filename: *const c_char) -> i32;
+
 #[no_mangle]
-pub extern "C" fn snailcrypt_ez_encrypt(left: usize, right: usize) -> usize {
-    left + right
+pub unsafe extern fn snailcrypt_ez_encrypt(plaintext: *const c_char, lockdate: *const c_char, hint: *const c_char, filename: *const c_char, callback: SnailcryptEzEncryptionCallback) -> i32 {
+    /**************************************************************************
+     * Convert "plaintext" to "plaintext_orig"
+     */
+    let plaintext_orig_str = unsafe {
+        // TODO: use nice return value
+        CStr::from_ptr(plaintext).to_str().unwrap()
+    };
+    // TODO: use nice return value
+    let plaintext_orig = String::from_str(&plaintext_orig_str).unwrap();
+
+    /**************************************************************************
+     * Convert "lockdate" to "lockdate_orig"
+     */
+    let lockdate_orig_str = unsafe {
+        // TODO: use nice return value
+        CStr::from_ptr(lockdate).to_str().unwrap()
+    };
+    // TODO: use nice return value
+    let lockdate_orig = String::from_str(&lockdate_orig_str).unwrap();
+
+    /**************************************************************************
+     * Convert "hint" to "hint_orig"
+     */
+    let hint_orig_str = unsafe {
+        // TODO: use nice return value
+        CStr::from_ptr(hint).to_str().unwrap()
+    };
+    // TODO: use nice return value
+    let hint_orig = String::from_str(&hint_orig_str).unwrap();
+
+    /**************************************************************************
+     * Convert "filename" to "filename_orig"
+     */
+    let filename_orig_str = unsafe {
+        // TODO: use nice return value
+        CStr::from_ptr(filename).to_str().unwrap()
+    };
+    // TODO: use nice return value
+    let filename_orig = String::from_str(&filename_orig_str).unwrap();
+
+    /**************************************************************************
+     * Get an "anylzer" from an "analyzer_factory"
+     */
+    let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+    let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
+
+    /**************************************************************************
+     * Get a "config" from a "config_factory"
+     */
+    let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+    let config: Rc<dyn config::Config> = config_factory.create();
+
+    /**************************************************************************
+     * Get a "client" from a "client_factory" using:
+     * 1. An "analyzer"
+     * 2. A "config"
+     */
+    let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
+                                    Rc::clone(&config));
+    let client: Rc<dyn client::Client> = client_factory.create();
+
+    /**************************************************************************
+     * Interpret the string in "lockdate_orig" to retrieve an actual 
+     * structured object "lockdate"
+     */
+    let lockdate: DateTime<FixedOffset> = DateTime::parse_from_str(lockdate_orig.as_str(),
+                                                                    client.get_datetime_format())
+        .unwrap_or_else(|error| {
+        panic!("Error: {:?}", error);
+    });
+
+    /**************************************************************************
+     * Perform the encryption
+     */
+    let cipher: String = client.encrypt(&client::ClientEncryptArg {
+        plaintext: plaintext_orig.clone(),
+        lockdate,
+        hint: hint_orig.clone(),
+        filename: filename_orig.clone(),
+    }).unwrap_or_else(|error| {
+        panic!("Error: {:?}", error);
+    });
+
+    /**************************************************************************
+     * Pass "cipher" to "callback"
+     */
+    // TODO: use nice return value
+    let cipher_cstring = CString::new(cipher.as_str()).unwrap();
+    callback(cipher_cstring.as_ptr())
 }
 
 #[no_mangle]
-pub extern "C" fn snailcrypt_ez_decrypt(left: usize, right: usize) -> usize {
-    left + right
+pub extern fn snailcrypt_ez_decrypt(cipher: *const c_char, callback: SnailcryptEzDecryptionCallback) -> i32 {
+    /**************************************************************************
+     * Convert "cipher" to "cipher_orig"
+     */
+    let cipher_orig_str = unsafe {
+        // TODO: use nice return value
+        CStr::from_ptr(cipher).to_str().unwrap()
+    };
+    // TODO: use nice return value
+    let cipher_orig = String::from_str(&cipher_orig_str).unwrap();
+
+    /**************************************************************************
+     * Get an "analyzer" from an "analyzer_factory"
+     */
+    let analyzer_factory: factory::AnalyzerFactory = factory::AnalyzerFactory::new();
+    let analyzer: Rc<dyn util::Analyzer> = analyzer_factory.create();
+
+    /**************************************************************************
+     * Get a "config" from a "config_factory"
+     */
+    let config_factory: factory::ConfigFactory = factory::ConfigFactory::new();
+    let config: Rc<dyn config::Config> = config_factory.create();
+
+    /**************************************************************************
+     * Get a "client" from a "client_factory" using:
+     * 1. An "analyzer"
+     * 2. A "config"
+     */
+    let client_factory: factory::ClientFactory = factory::ClientFactory::new(Rc::clone(&analyzer),
+                                    Rc::clone(&config));
+    let client: Rc<dyn client::Client> = client_factory.create();
+
+
+    let result_success = client
+        .decrypt(cipher_orig.as_str())
+        .unwrap_or_else(|error| {
+            panic!("Error: {:?}", error.error_message);
+        });
+
+    /**************************************************************************
+     * Pass "result_success" to "callback"
+     */
+    // TODO: use nice return value
+    let plaintext_cstring = CString::new(result_success.plaintext.as_str()).unwrap();
+    let hint_cstring = CString::new(result_success.hint.as_str()).unwrap();
+    let filename_cstring = CString::new(result_success.filename.as_str()).unwrap();
+    unsafe { 
+        callback(plaintext_cstring.as_ptr(), hint_cstring.as_ptr(), filename_cstring.as_ptr()) 
+    }
 }
 
 #[cfg(test)]
